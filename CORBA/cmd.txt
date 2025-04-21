@@ -1,0 +1,6 @@
+set PATH=C:\Program Files\Java\jdk-1.8\bin;%PATH%
+idlj -fall Hello.idl
+javac HelloApp/*.java Server.java Client.java
+orbd -ORBInitialPort 1050
+java Server -ORBInitialPort 1051
+java Client -ORBInitialPort 1051
