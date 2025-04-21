@@ -1,27 +1,32 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-import {
-  FIREBASE_API_KEY,
-  FIREBASE_AUTH_DOMAIN,
-  FIREBASE_PROJECT_ID,
-  FIREBASE_STORAGE_BUCKET,
-  FIREBASE_MESSAGING_SENDER_ID,
-  FIREBASE_APP_ID,
-} from '@env';
+import java.io.*;
+import java.net.*;
+import java.util.Scanner;
 
-const firebaseConfig = {
-  apiKey: FIREBASE_API_KEY,
-  authDomain: FIREBASE_AUTH_DOMAIN,
-  projectId: FIREBASE_PROJECT_ID,
-  storageBucket: FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
-  appId: FIREBASE_APP_ID,
-};
+public class SharedMemoryClient {
+    public static void main(String[] args) {
+        try (
+            Socket socket = new Socket("localhost", 5000);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            Scanner scanner = new Scanner(System.in)
+        ) {
+            System.out.println("Connected to the server.");
 
-const app = initializeApp(firebaseConfig);
+            String input;
+            while (true) {
+                System.out.print("Enter command (get/set <value>/exit): ");
+                input = scanner.nextLine();
+                out.println(input);
 
-const db = getFirestore(app);
-const storage = getStorage(app);
+                String response = in.readLine();
+                System.out.println("Server: " + response);
 
-export { db, storage };
+                if (input.equalsIgnoreCase("exit")) {
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
