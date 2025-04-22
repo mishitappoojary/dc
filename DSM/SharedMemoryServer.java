@@ -2,57 +2,49 @@ import java.io.*;
 import java.net.*;
 
 public class SharedMemoryServer {
-    private static int sharedVariable = 50;  // Initial value of shared variable
+    private static int sharedVariable = 50;
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(5000)) {
-            System.out.println("SharedMemoryServer started on port 5000...");
+            System.out.println("Server started on port 5000...");
 
             while (true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("Client connected...");
-                new ClientHandler(clientSocket).start();
+                Socket client = serverSocket.accept();
+                System.out.println("Client connected.");
+                new Thread(() -> handleClient(client)).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static class ClientHandler extends Thread {
-        private Socket clientSocket;
-
-        public ClientHandler(Socket socket) {
-            this.clientSocket = socket;
-        }
-
-        public void run() {
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
-
-                String command;
-                while ((command = in.readLine()) != null) {
-                    if (command.equalsIgnoreCase("get")) {
-                        out.println("Accessed Shared Variable: " + sharedVariable);
-                    } else if (command.startsWith("set")) {
-                        try {
-                            int newValue = Integer.parseInt(command.split(" ")[1]);
-                            sharedVariable = newValue;
-                            out.println("Updated Shared Variable: " + sharedVariable);
-                        } catch (Exception e) {
-                            out.println("Invalid set command. Use: set <integer_value>");
-                        }
-                    } else if (command.equalsIgnoreCase("exit")) {
-                        out.println("Disconnecting...");
-                        break;
-                    } else {
-                        out.println("Invalid Command");
+    private static void handleClient(Socket client) {
+        try (
+            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            PrintWriter out = new PrintWriter(client.getOutputStream(), true)
+        ) {
+            String input;
+            while ((input = in.readLine()) != null) {
+                if (input.equalsIgnoreCase("get")) {
+                    out.println("Shared Variable: " + sharedVariable);
+                } else if (input.startsWith("set")) {
+                    try {
+                        sharedVariable = Integer.parseInt(input.split(" ")[1]);
+                        out.println("Updated to: " + sharedVariable);
+                    } catch (Exception e) {
+                        out.println("Invalid format. Use: set <number>");
                     }
+                } else if (input.equalsIgnoreCase("exit")) {
+                    out.println("Goodbye!");
+                    break;
+                } else {
+                    out.println("Unknown command.");
                 }
-                clientSocket.close();
-                System.out.println("Client disconnected...");
-            } catch (IOException e) {
-                e.printStackTrace();
             }
+            client.close();
+            System.out.println("Client disconnected.");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
